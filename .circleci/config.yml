@@ -1,54 +1,39 @@
-version: 2
+version: 2.1
+
+orbs:
+  windows: circleci/windows@2.2.0
+
 jobs:
-  deploy:
-    docker:
-      - image: circleci/python:3.7
-    working_directory: ~/repo
+  test:
+    description: Setup and run application tests
+    executor:
+      name: windows/default
     steps:
       - checkout
       - run:
-          name: Install awscli
-          command: |
-            sudo pip install awsebcli --upgrade
+          name: "Install project dependencies"
+          command: dotnet.exe restore
+    
       - run:
-          name: Create AWS credentials manually
-          command: |
-            mkdir ~/.aws
-            touch ~/.aws/config
-            chmod 600 ~/.aws/config
-            echo "[profile kenani]" > ~/.aws/config
-            echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> ~/.aws/config
-            echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> ~/.aws/config
+          name: "Run Application Tests"
+          command: dotnet.exe test -v n --results-directory:test_coverage --collect:"Code Coverage"
       - run:
-          name: Deploy to EB if branch is Master
-          command: |
-           # eb init circleci-beanstalk-example -r us-east-1 || yes 
-           #  eb init --region us-east-1 --platform  iis-10.0 circleci-beanstalk-example1
-           #  eb create circleci-beanstalk-example-master1
-            eb platform list  --region us-east-1 
-            
-           # eb deploy circleci-beanstalk-example-master
-           # eb use circleci-beanstalk-example-master --profile kenani --region us-east-1
-           # eb deploy -v --staged --profile kenani
+          name: "Print Working Directory"
+          command: pwd
+      - store_artifacts:
+          path: C:\Users\circleci\project\test_coverage
+  build:
+    description: Build application with Release configuration
+    executor:
+      name: windows/default
+    steps:
+      - checkout
       - run:
-          name: List
-          command: |
-            eb list
-      - run:
-          name: deploy
-          command: |
-            eb deploy circleci-beanstalk-example-master
-      #- run:
-       #   name: create
-        #  command: |
-         #   eb create circleci-beanstalk-example-master1
+          name: "Build Application according to some given configuration"
+          command: dotnet.exe build --configuration Release
 workflows:
-  version: 2
-  build-deploy:
+  test_and_build:
     jobs:
-      - deploy:
-          filters:
-            branches:
-              only:
-                - master
-                - develop
+      #- test
+      - build:
+         

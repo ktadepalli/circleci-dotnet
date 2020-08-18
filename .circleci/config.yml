@@ -24,9 +24,9 @@ jobs:
           command: |
            # eb init circleci-beanstalk-example -r us-east-1 || yes 
             eb init --region us-east-1 --platform 64bit-amazon-linux-2-v2.0.1-running-.net-core  circleci-beanstalk-example
-            eb platform list  --region us-east-1 
+          #  eb platform list  --region us-east-1 
            # eb create circleci-beanstalk-example-master
-           # eb deploy circleci-beanstalk-example-master
+            eb deploy circleci-beanstalk-example-master
            # eb use circleci-beanstalk-example-master --profile kenani --region us-east-1
            # eb deploy -v --staged --profile kenani
       - run:

@@ -23,7 +23,7 @@ jobs:
           name: Deploy to EB if branch is Master
           command: |
            # eb init circleci-beanstalk-example -r us-east-1 || yes 
-            eb init --region us-east-1 --platform 64bit-amazon-linux-2-v2.0.1-running-.net-core  circleci-beanstalk-example
+            eb init --region us-east-1 --platform  iis-10.0 circleci-beanstalk-example
             eb create circleci-beanstalk-example-master
           #  eb platform list  --region us-east-1 
             

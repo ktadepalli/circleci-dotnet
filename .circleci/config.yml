@@ -34,7 +34,7 @@ jobs:
   deploy:
     docker:
       - image: circleci/python:3.7
-    working_directory: C:\Users\circleci\project
+    working_directory: ~/repo
     steps:
       - run:
           name: Install awscli

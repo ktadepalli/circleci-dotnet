@@ -31,6 +31,47 @@ jobs:
       - run:
           name: "Build Application according to some given configuration"
           command: dotnet.exe build --configuration Release
+  deploy:
+    docker:
+      - image: circleci/python:3.7
+    working_directory: C:\Users\circleci\project
+    steps:
+      - run:
+          name: Install awscli
+          command: |
+            sudo pip install awsebcli --upgrade
+      - run:
+          name: Create AWS credentials manually
+          command: |
+            mkdir ~/.aws
+            touch ~/.aws/config
+            chmod 600 ~/.aws/config
+            echo "[profile kenani]" > ~/.aws/config
+            echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> ~/.aws/config
+            echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> ~/.aws/config
+      - run:
+          name: Deploy to EB if branch is Master
+          command: |
+           # eb init circleci-beanstalk-example -r us-east-1 || yes 
+           #  eb init --region us-east-1 --platform  iis-10.0 circleci-beanstalk-example1
+           #  eb create circleci-beanstalk-example-master1
+            eb platform list  --region us-east-1 
+            
+           # eb deploy circleci-beanstalk-example-master
+           # eb use circleci-beanstalk-example-master --profile kenani --region us-east-1
+           # eb deploy -v --staged --profile kenani
+      - run:
+          name: List
+          command: |
+            eb list
+      - run:
+          name: deploy
+          command: |
+            eb deploy circleci-beanstalk-example-master
+      #- run:
+       #   name: create
+        #  command: |
+         #   eb create circleci-beanstalk-example-master1      
 workflows:
   test_and_build:
     jobs:
@@ -38,3 +79,7 @@ workflows:
       - build:
           requires:
             - test
+      - deploy:
+          requires:
+            - build
+                     

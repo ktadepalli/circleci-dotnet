@@ -10,15 +10,13 @@ jobs:
     description: Build application with Release configuration
     steps:     
       - checkout
-	  - attach_workspace:
-          at: ~/repo
       - run:
           name: dotnet restore
           working_directory: ~/repo
           command: |
             dotnet restore 
       - run:
-          name: dotnet restore
+          name: dotnet build
           working_directory: ~/repo
           command: |
             dotnet build  

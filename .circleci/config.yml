@@ -1,85 +1,84 @@
-version: 2.1
+version: 2
 
-orbs:
-  windows: circleci/windows@2.2.0
-
+_defaults: &defaults
+  working_directory: ~/repo
+  docker:
+   - image: mcr.microsoft.com/dotnet/core/sdk
 jobs:
-  test:
-    description: Setup and run application tests
-    executor:
-      name: windows/default
-    steps:
-      - checkout
-      - run:
-          name: "Install project dependencies"
-          command: dotnet.exe restore
-    
-      - run:
-          name: "Run Application Tests"
-          command: dotnet.exe test -v n --results-directory:test_coverage --collect:"Code Coverage"
-      - run:
-          name: "Print Working Directory"
-          command: pwd
-      - store_artifacts:
-          path: C:\Users\circleci\project\test_coverage
-  build:
+  publish:
+    <<: *defaults
     description: Build application with Release configuration
-    executor:
-      name: windows/default
-    steps:
+    steps:     
       - checkout
+	  - attach_workspace:
+          at: ~/repo
       - run:
-          name: "Build Application according to some given configuration"
-          command: dotnet.exe build --configuration Release
-  deploy:
-    docker:
-      - image: circleci/python:3.7
-    working_directory: ~/repo
-    steps:
-      - run:
-          name: Install awscli
+          name: dotnet restore
+          working_directory: ~/repo
           command: |
-            sudo pip install awsebcli --upgrade
+            dotnet restore 
+      - run:
+          name: dotnet restore
+          working_directory: ~/repo
+          command: |
+            dotnet build  
+      - run:
+          name: dotnet restore
+          working_directory: ~/repo
+          command: |
+            dotnet publish -c debug -o  ~/repo/artifact
+            cp ~/repo/aws-windows-deployment-manifest.json ~/repo/artifact 
+      - persist_to_workspace:
+          root: ~/repo/artifact
+          paths:
+            - .
+  deploy:
+    <<: *defaults
+    description: Build application with Release configuration
+    steps:     
+      - attach_workspace:
+          at: ~/repo/artifact
+      - run:
+          name: Installing deployment dependencies
+          working_directory: ~/repo
+          command: |
+            apt-get -y -qq update
+            apt-get install -y python-pip python-dev build-essential
+            pip install  --upgrade setuptools
+            pip install  awsebcli --upgrade
       - run:
           name: Create AWS credentials manually
           command: |
-            mkdir ~/.aws
-            touch ~/.aws/config
-            chmod 600 ~/.aws/config
-            echo "[profile kenani]" > ~/.aws/config
-            echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> ~/.aws/config
-            echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> ~/.aws/config
+            mkdir ~/repo/artifact/.aws
+            touch ~/repo/artifact/.aws/config
+            chmod 600 ~/repo/artifact/.aws/config
+            echo "[profile kenani]" > ~/repo/artifact/.aws/config
+            echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> ~/repo/artifact/.aws/config
+            echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> ~/repo/artifact/.aws/config
       - run:
           name: Deploy to EB if branch is Master
+          working_directory: ~/repo/artifact
           command: |
-           # eb init circleci-beanstalk-example -r us-east-1 || yes 
-           #  eb init --region us-east-1 --platform  iis-10.0 circleci-beanstalk-example1
-           #  eb create circleci-beanstalk-example-master1
-            eb platform list  --region us-east-1 
+            eb init --region us-east-1 --platform iis-10.0 circleci-beanstalk-example 
+            eb create circleci-beanstalk-example-master
+           # eb deploy circleci-beanstalk-example-test
             
-           # eb deploy circleci-beanstalk-example-master
-           # eb use circleci-beanstalk-example-master --profile kenani --region us-east-1
-           # eb deploy -v --staged --profile kenani
-      - run:
-          name: List
-          command: |
-            eb list
-      - run:
-          name: deploy
-          command: |
-            eb deploy circleci-beanstalk-example-master
-      #- run:
-       #   name: create
-        #  command: |
-         #   eb create circleci-beanstalk-example-master1      
 workflows:
-  test_and_build:
+  version: 2
+  build-deploy:
     jobs:
-      - test
-      - build:
-          requires:
-            - test
-      - deploy:
+
+      - publish:
           requires:
             - build
-                     
+          filters:
+            branches:
+              only:
+                - master
+      - deploy:
+          requires:
+            - publish
+          filters:
+            branches:
+              only:
+                - master              

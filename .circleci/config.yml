@@ -58,8 +58,8 @@ jobs:
           working_directory: ~/repo/artifact
           command: |
             eb init --region us-east-1 --platform iis-10.0 circleci-beanstalk-example 
-            eb create circleci-beanstalk-example-master
-           # eb deploy circleci-beanstalk-example-test
+            eb deploy circleci-beanstalk-example-master
+             # eb create circleci-beanstalk-example-master
             
 workflows:
   version: 2
